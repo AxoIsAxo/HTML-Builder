@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HTML Builder</title>
+  <style>
+    .container {
+      border: 2px dashed gray;
+      min-height: 200px;
+      padding: 10px;
+      position: relative;
+    }
+    
+    .item {
+      border: 1px solid gray;
+      padding: 5px;
+      margin-bottom: 5px;
+    }
+    
+    .delete-button {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+    }
+    
+    #download-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>HTML Builder</h1>
+  
+  <div class="container" id="container">
+    <p>Ziehe Elemente hierher:</p>
+  </div>
+  
+  <div>
+    <button onclick="addImage()">Bild hinzufügen</button>
+    <button onclick="addVideo()">Video hinzufügen</button>
+    <button onclick="addFile()">Datei hinzufügen</button>
+    <button onclick="addText()">Text hinzufügen</button>
+    <button onclick="addLink()">Hyperlink hinzufügen</button>
+  </div>
+  
+  <button onclick="downloadFile()" id="download-button">Datei herunterladen</button>
+  
+  <script>
+    var items = [];
+    var downloaded = false;
+  
+    function addImage() {
+      var input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.className = "item";
+      input.addEventListener("change", function(event) {
+        var file = event.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function() {
+          var image = document.createElement("img");
+          image.src = reader.result;
+          image.className = "item";
+          makeDraggable(image);
+          addDeleteButton(image);
+          document.getElementById("container").appendChild(image);
+        };
+        reader.readAsDataURL(file);
+      });
+      makeDraggable(input);
+      document.getElementById("container").appendChild(input);
+      items.push(input);
+    }
+    
+    function addVideo() {
+      var input = document.createElement("input");
+      input.type = "file";
+      input.accept = "video/*";
+      input.className = "item";
+      input.addEventListener("change", function(event) {
+        var file = event.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function() {
+          var video = document.createElement("video");
+          video.src = reader.result;
+          video.controls = true;
+          video.className = "item";
+          makeDraggable(video);
+          addDeleteButton(video);
+          document.getElementById("container").appendChild(video);
+        };
+        reader.readAsDataURL(file);
+      });
+      makeDraggable(input);
+      document.getElementById("container").appendChild(input);
+      items.push(input);
+    }
+    
+    function addFile() {
+      var input = document.createElement("input");
+      input.type = "file";
+      input.className = "item";
+      makeDraggable(input);
+      addDeleteButton(input);
+      document.getElementById("container").appendChild(input);
+      items.push(input);
+    }
+    
+    function addText() {
+      var text = document.createElement("p");
+      var inputText = prompt("Bitte gib den Text ein:");
+      text.innerHTML = applyColor(inputText);
+      text.className = "item";
+      makeDraggable(text);
+      addDeleteButton(text);
+      document.getElementById("container").appendChild(text);
+      items.push(text);
+    }
+    
+    function applyColor(text) {
+      var colorPattern = /§\/(\w+)\s(.+)/g;
+      return text.replace(colorPattern, function(match, color, content) {
+        return '<span style="color: ' + color + '">' + content + '</span>';
+      });
+    }
+    
+    function addLink() {
+      var inputUrl = prompt("Bitte gib die URL des Links ein:");
+      if (inputUrl) {
+        if (!inputUrl.startsWith("http://") && !inputUrl.startsWith("https://")) {
+          inputUrl = "https://" + inputUrl;
+        }
+        var link = document.createElement("a");
+        link.href = inputUrl;
+        link.innerText = "Klicke hier";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "item";
+        makeDraggable(link);
+        addDeleteButton(link);
+        document.getElementById("container").appendChild(link);
+        items.push(link);
+      }
+    }
+    
+    function makeDraggable(element) {
+      var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+      element.onmousedown = dragMouseDown;
+    
+      function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+      }
+    
+      function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+      }
+    
+      function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+      }
+    }
+    
+    function addDeleteButton(element) {
+      var deleteButton = document.createElement("button");
+      deleteButton.innerText = "Löschen";
+      deleteButton.className = "delete-button";
+      deleteButton.addEventListener("click", function() {
+        element.parentNode.removeChild(element);
+        items.splice(items.indexOf(element), 1);
+        if (downloaded) {
+          deleteButton.style.display = "none";
+        }
+      });
+      element.appendChild(deleteButton);
+    }
+    
+    function downloadFile() {
+      downloaded = true;
+      var combinedContent = generateCode();
+  
+      // Entferne den Löschen-Button aus dem generierten Code
+      combinedContent = combinedContent.replace(/<button.*?Löschen<\/button>/g, "");
+  
+      var fileBlob = new Blob([combinedContent], { type: "text/html" });
+      var fileUrl = URL.createObjectURL(fileBlob);
+  
+      var downloadLink = document.createElement("a");
+      downloadLink.href = fileUrl;
+      downloadLink.download = "downloaded_file.html";
+      downloadLink.click();
+    }
+    
+    function generateCode() {
+      var combinedContent = "<html><head><title>Generated HTML</title></head><body>";
+      for (var i = 0; i < items.length; i++) {
+        combinedContent += items[i].outerHTML;
+      }
+      combinedContent += "</body></html>";
+  
+      return combinedContent;
+    }
+  </script>
+</body>
+</html>
