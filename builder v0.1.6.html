@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HTML Builder</title>
+  <style>
+    .container {
+      border: 2px dashed gray;
+      min-height: 200px;
+      padding: 10px;
+      position: relative;
+    }
+    
+    .item {
+      border: 1px solid gray;
+      padding: 5px;
+      margin-bottom: 5px;
+    }
+    
+    .delete-button {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+    }
+    
+    #download-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1 data-de="HTML Builder" data-en="HTML Builder" data-zh="HTML 构建器">HTML Builder</h1>
+  
+  <div class="container" id="container">
+    <p class="item" data-de="Ziehe Elemente hierher:" data-en="Drag elements here:" data-zh="将元素拖拽到这里：">Ziehe Elemente hierher:</p>
+  </div>
+  
+  <div>
+    <button onclick="addImage()" data-de="Bild hinzufügen" data-en="Add Image" data-zh="添加图像">Bild hinzufügen</button>
+    <button onclick="addVideo()" data-de="Video hinzufügen" data-en="Add Video" data-zh="添加视频">Video hinzufügen</button>
+    <button onclick="addFile()" data-de="Datei hinzufügen" data-en="Add File" data-zh="添加文件">Datei hinzufügen</button>
+    <button onclick="addText()" data-de="Text hinzufügen" data-en="Add Text" data-zh="添加文本">Text hinzufügen</button>
+    <button onclick="addLink()" data-de="Hyperlink hinzufügen" data-en="Add Hyperlink" data-zh="添加超链接">Hyperlink hinzufügen</button>
+    <button onclick="addAudio()" data-de="Audio hinzufügen" data-en="Add Audio" data-zh="添加音频">Audio hinzufügen</button>
+  </div>
+  
+  <button onclick="downloadFile()" id="download-button" data-de="Datei herunterladen" data-en="Download File" data-zh="下载文件">Datei herunterladen</button>
+  
+  <div>
+    <label for="language-select" data-de="Sprache:" data-en="Language:" data-zh="语言：">Sprache:</label>
+    <select id="language-select" onchange="changeLanguage()">
+      <option value="de" data-de="Deutsch" data-en="German" data-zh="德语">Deutsch</option>
+      <option value="en" data-de="Englisch" data-en="English" data-zh="英语">Englisch</option>
+      <option value="zh" data-de="Mandarin" data-en="Mandarin" data-zh="中文">Mandarin</option>
+    </select>
+  </div>
+  
+  <script>
+    var items = [];
+    var downloaded = false;
+    var currentLanguage = "de";
+  
+    function addImage() {
+      var input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.className = "item";
+      makeDraggable(input);
+      addDeleteButton(input);
+      document.getElementById("container").appendChild(input);
+      items.push(input);
+    }
+    
+    function addVideo() {
+      var input = document.createElement("input");
+      input.type = "file";
+      input.accept = "video/*";
+      input.className = "item";
+      makeDraggable(input);
+      addDeleteButton(input);
+      document.getElementById("container").appendChild(input);
+      items.push(input);
+    }
+    
+    function addFile() {
+      var input = document.createElement("input");
+      input.type = "file";
+      input.className = "item";
+      makeDraggable(input);
+      addDeleteButton(input);
+      document.getElementById("container").appendChild(input);
+      items.push(input);
+    }
+    
+    function addText() {
+      var inputText = prompt(dataLanguage("Bitte gib den Text ein:", "Please enter the text:", "请输入文本："));
+      if (inputText) {
+        var text = document.createElement("p");
+        text.innerHTML = applyColor(inputText);
+        text.className = "item";
+        makeDraggable(text);
+        addDeleteButton(text);
+        document.getElementById("container").appendChild(text);
+        items.push(text);
+      }
+    }
+    
+    function applyColor(text) {
+      var colorPattern = /§\/(\w+)\s(.+)/g;
+      return text.replace(colorPattern, function(match, color, content) {
+        return '<span style="color: ' + color + '">' + content + '</span>';
+      });
+    }
+    
+    function addLink() {
+      var inputUrl = prompt(dataLanguage("Bitte gib die URL des Links ein:", "Please enter the URL of the link:", "请输入链接的URL："));
+      if (inputUrl) {
+        if (!inputUrl.startsWith("http://") && !inputUrl.startsWith("https://")) {
+          inputUrl = "https://" + inputUrl;
+        }
+        var link = document.createElement("a");
+        link.href = inputUrl;
+        link.innerText = dataLanguage("Klicke hier", "Click here", "点击这里");
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "item";
+        makeDraggable(link);
+        addDeleteButton(link);
+        document.getElementById("container").appendChild(link);
+        items.push(link);
+      }
+    }
+    
+    function addAudio() {
+      var input = document.createElement("input");
+      input.type = "file";
+      input.accept = "audio/*";
+      input.className = "item";
+      makeDraggable(input);
+      addDeleteButton(input);
+      document.getElementById("container").appendChild(input);
+      items.push(input);
+    }
+    
+    function makeDraggable(element) {
+      var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+      element.onmousedown = dragMouseDown;
+    
+      function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+      }
+    
+      function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+      }
+    
+      function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+      }
+    }
+    
+    function addDeleteButton(element) {
+      var deleteButton = document.createElement("button");
+      deleteButton.innerText = dataLanguage("Löschen", "Delete", "删除");
+      deleteButton.className = "delete-button";
+      deleteButton.onclick = function() {
+        element.parentNode.removeChild(element);
+        items = items.filter(function(item) {
+          return item !== element;
+        });
+      };
+      element.appendChild(deleteButton);
+    }
+    
+    function downloadFile() {
+      var combinedContent = "<html><head><title>Generated HTML</title></head><body>";
+  
+      for (var i = 0; i < items.length; i++) {
+        combinedContent += items[i].outerHTML;
+      }
+  
+      combinedContent += "</body></html>";
+  
+      // Entferne den Löschen-Button aus dem heruntergeladenen Code
+      combinedContent = combinedContent.replace(/<button class="delete-button".*?<\/button>/g, "");
+  
+      var downloadLink = document.createElement("a");
+      downloadLink.href = "data:text/html;charset=utf-8," + encodeURIComponent(combinedContent);
+      downloadLink.download = "index.html";
+      downloadLink.click();
+    }
+  
+    function generateCode() {
+      var container = document.getElementById("container");
+      var clonedContainer = container.cloneNode(true);
+      var deleteButtons = clonedContainer.getElementsByClassName("delete-button");
+  
+      // Entferne den Löschen-Button aus dem geklonten Container
+      while (deleteButtons.length > 0) {
+        deleteButtons[0].parentNode.removeChild(deleteButtons[0]);
+      }
+  
+      return clonedContainer.outerHTML;
+    }
+  
+    function changeLanguage() {
+      var languageSelect = document.getElementById("language-select");
+      currentLanguage = languageSelect.value;
+      applyLanguage();
+    }
+    
+    function applyLanguage() {
+      var languageElements = document.getElementsByClassName("item");
+      var languageButtons = document.getElementsByTagName("button");
+      var languageLabels = document.getElementsByTagName("label");
+  
+      for (var i = 0; i < languageElements.length; i++) {
+        var element = languageElements[i];
+        element.innerHTML = dataLanguage(element.getAttribute("data-de"), element.getAttribute("data-en"), element.getAttribute("data-zh"));
+      }
+      
+      for (var i = 0; i < languageButtons.length; i++) {
+        var button = languageButtons[i];
+        button.innerText = dataLanguage(button.getAttribute("data-de"), button.getAttribute("data-en"), button.getAttribute("data-zh"));
+      }
+      
+      for (var i = 0; i < languageLabels.length; i++) {
+        var label = languageLabels[i];
+        label.innerText = dataLanguage(label.getAttribute("data-de"), label.getAttribute("data-en"), label.getAttribute("data-zh"));
+      }
+    }
+    
+    function dataLanguage(de, en, zh) {
+      if (currentLanguage === "de") {
+        return de;
+      } else if (currentLanguage === "en") {
+        return en;
+      } else if (currentLanguage === "zh") {
+        return zh;
+      }
+    }
+  
+    applyLanguage();
+  </script>
+</body>
+</html>
